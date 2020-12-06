@@ -1,11 +1,10 @@
-from typing import List, Dict, Union, Tuple, final
+from typing import List, Dict, Union, Tuple
 import torch
 from .utils import pad_sents, pad_sents_char, count_corpus
 from pathlib import Path
 import json
 
 
-@final
 class VocabStore(object):
     """
     Will store source or target vocabulary
@@ -33,7 +32,7 @@ class VocabStore(object):
             self.unk = token2id["<unk>"]
             self.pad = token2id["<pad>"]
 
-            self.id2word = {v: k for k, v in token2id.items()}
+            self.id2token = {v: k for k, v in token2id.items()}
 
         else:  # build new
             self.token2id = {}
@@ -57,7 +56,7 @@ class VocabStore(object):
             if not tokens:
                 tokens = []
 
-            self.id2word = {}
+            self.id2token = {}
             uniq_tokens = list(self.token2id.keys())
             token_freqs = count_corpus(tokens)
             uniq_tokens += [token for token, freq in token_freqs
@@ -66,7 +65,7 @@ class VocabStore(object):
             for token in uniq_tokens:
                 self.token2id[token] = self.token2id.get(
                     token, len(self.token2id))
-                self.id2word[self.token2id[token]] = token
+                self.id2token[self.token2id[token]] = token
 
         # For handling chars
 
@@ -102,7 +101,7 @@ class VocabStore(object):
             otherwise a single index. Unk index if token not in vocab.
         """
         if not isinstance(tokens, (list, tuple)):
-            return self.token2id.get(tokens, self.unk)
+            return self.token2id.get(tokens, self.token2id[self.unk])
         return [self.__getitem__(token) for token in tokens]
 
     def __contains__(self, token) -> bool:
@@ -135,7 +134,7 @@ class VocabStore(object):
             else a single token
         """
         if not isinstance(indices, (list, tuple)):
-            return self.id2word.get(indices, None)
+            return self.id2token.get(indices, None)
         return [self.to_tokens(index) for index in indices]
 
     def length(self, tokens: bool = True) -> int:
@@ -157,7 +156,7 @@ class VocabStore(object):
         """
         self.token2id[token] = self.token2id.get(token, len(self))
         idx = self.token2id[token]
-        self.id2word[idx] = token
+        self.id2token[idx] = token
         return idx
 
     def sent2id(self, sents: List[List[str]]) -> List[List[int]]:
@@ -177,7 +176,7 @@ class VocabStore(object):
             else single char index
         """
         if not isinstance(char, (list, tuple)):
-            return self.char2id.get(char, self.unk)
+            return self.char2id.get(char, self.char2id[self.unk])
         return [self.to_charid(c) for c in char]
 
     def word2char(self, tokens: Union[List[str], str]) -> \
@@ -231,14 +230,14 @@ class VocabStore(object):
             shape (sentence_length, batch_size, max_word_length)
         """
         ids = self.sent2id(sents) if tokens else self.sent2charid(sents)
-        pad_ids = pad_sents(ids, self[self.pad]) if tokens else pad_sents_char(
-            ids, self.to_charid(self.pad), max_word_length=max_word_length)
+        pad_ids = pad_sents(ids, self[self.pad]) if tokens else \
+            pad_sents_char(ids, self.to_charid(self.pad),
+                           max_word_length=max_word_length)
         tensor_sents = torch.tensor(pad_ids, dtype=torch.long, device=device)
         return torch.t(tensor_sents) if tokens \
             else tensor_sents.permute([1, 0, 2])
 
 
-@final
 class Vocab(object):
     def __init__(self, src_vocab: VocabStore = None,
                  tgt_vocab: VocabStore = None) -> None:
