@@ -3,7 +3,6 @@ from typing import Union, List
 from functools import reduce
 from pathlib import Path
 import numpy as np
-from torch._C import dtype
 
 
 def count_corpus(tokens: Union[List[str], List[List[str]]],
@@ -41,7 +40,8 @@ def pad_sents(sents: List[List[int]], pad_token: int) -> List[List[int]]:
     return sents_padded
 
 
-def read_corpus(filepath: Union[str, Path], is_target: bool = False) -> List[str]:
+def read_corpus(filepath: Union[str, Path],
+                is_target: bool = False) -> List[str]:
     """ Read file, where each sentence is dilineated by a `\n`.
     @param filepath (str, Path): path to file containing corpus
     @param is_target (bool): "tgt" or "src" indicating whether text
