@@ -1,5 +1,6 @@
 from unittest import TestCase
 from nmt.datasets import Vocab
+from nmt.datasets import batch_iter
 
 sentences_words = [
     ['Human:', 'What', 'do', 'we', 'want?'],
@@ -38,3 +39,8 @@ class TestVocab(TestCase):
         char_tensors = vocab.src.to_tensor(sentences_words, tokens=False)
         self.assertEqual(token_tensors.shape, (6, 4))
         self.assertEqual(char_tensors.shape, (6, 4, 21))
+
+    def test_batchiter(self):
+        for src, tgt in batch_iter((sentences_words, sentences_words),
+                                   batch_size=2, shuffle=True):
+            self.assertEqual(len(src), len(tgt))
