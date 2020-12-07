@@ -41,6 +41,7 @@ class TestVocab(TestCase):
         self.assertEqual(char_tensors.shape, (6, 4, 21))
 
     def test_batchiter(self):
-        for src, tgt in batch_iter((sentences_words, sentences_words),
+        data = list(zip(sentences_words, sentences_words))
+        for src, tgt in batch_iter(data,
                                    batch_size=2, shuffle=True):
             self.assertEqual(len(src), len(tgt))
