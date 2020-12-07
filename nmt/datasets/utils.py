@@ -59,7 +59,7 @@ def read_corpus(filepath: Union[str, Path],
     return data
 
 
-def batch_iter(data: Union[tuple, list],
+def batch_iter(data: List[tuple],
                batch_size: int,
                shuffle: bool = False) -> tuple:
     """
