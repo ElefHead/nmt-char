@@ -27,10 +27,10 @@ class VocabStore(object):
         # For handling tokens
         if token2id:  # restore from save
             self.token2id = token2id
-            self.start_token = token2id["<s>"]
-            self.end_token = token2id["</s>"]
-            self.unk = token2id["<unk>"]
-            self.pad = token2id["<pad>"]
+            self.start_token = "<s>"
+            self.end_token = "</s>"
+            self.unk = "<unk>"
+            self.pad = "<pad>"
 
             self.id2token = {v: k for k, v in token2id.items()}
 
@@ -67,8 +67,12 @@ class VocabStore(object):
                     token, len(self.token2id))
                 self.id2token[self.token2id[token]] = token
 
-        # For handling chars
+        self.unk_token_idx = self.token2id[self.unk]
+        self.pad_token_idx = self.token2id[self.pad]
+        self.start_token_idx = self.token2id[self.start_token]
+        self.end_token_idx = self.token2id[self.end_token]
 
+        # For handling chars
         self.char_list = list(
             """ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789,;
             .!?:'\"/\\|_@#$%^&*~`+-=<>()[]""".replace("\n", "")
@@ -83,6 +87,11 @@ class VocabStore(object):
             self.char2id[c] = self.char2id.get(c, len(self.char2id))
 
         self.id2char = {v: k for k, v in self.char2id.items()}
+
+        self.unk_char_idx = self.char2id[self.unk]
+        self.pad_char_idx = self.char2id[self.pad]
+        self.start_char_idx = self.char2id[self.start_char]
+        self.end_char_idx = self.char2id[self.end_char]
 
     def __len__(self) -> int:
         """
@@ -101,7 +110,7 @@ class VocabStore(object):
             otherwise a single index. Unk index if token not in vocab.
         """
         if not isinstance(tokens, (list, tuple)):
-            return self.token2id.get(tokens, self.token2id[self.unk])
+            return self.token2id.get(tokens, self.unk_token_idx)
         return [self.__getitem__(token) for token in tokens]
 
     def __contains__(self, token) -> bool:
@@ -176,7 +185,7 @@ class VocabStore(object):
             else single char index
         """
         if not isinstance(char, (list, tuple)):
-            return self.char2id.get(char, self.char2id[self.unk])
+            return self.char2id.get(char, self.unk_char_idx)
         return [self.to_charid(c) for c in char]
 
     def word2char(self, tokens: Union[List[str], str]) -> \
