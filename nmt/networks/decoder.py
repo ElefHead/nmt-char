@@ -8,7 +8,7 @@ from typing import Tuple
 
 class Decoder(nn.Module):
     def __init__(self, input_size: int,
-                 hidden_size: int,
+                 hidden_size: int, 
                  bias: bool = True,
                  dropout_prob: float = 0.3):
         super(Decoder, self).__init__()
@@ -25,14 +25,14 @@ class Decoder(nn.Module):
             bias=False
         )
         self.dropout = nn.Dropout(p=dropout_prob)
-
+        
     def forward(self, output: torch.Tensor,
                 enc_hidden: torch.Tensor,
                 enc_projection: torch.Tensor,
                 dec_init_state: Tuple[torch.Tensor, torch.Tensor],
                 enc_masks: torch.Tensor = None,
                 device: torch.device = 'cpu') -> torch.Tensor:
-
+        
         dec_state = dec_init_state
         batch_size, sent_length, _ = enc_hidden.size()
 
@@ -45,9 +45,12 @@ class Decoder(nn.Module):
             dec_state = self.decoder(Ybar_t, dec_state)
             dec_hidden, dec_cell = dec_state
 
-            a_t = self.attention(
-                enc_hidden, enc_projection, dec_hidden, enc_masks)
+            attention = self.attention(enc_projection, dec_hidden, enc_masks)
+            attention = attention.unsqueeze(dim=1)
 
+            a_t = attention.bmm(enc_hidden)
+            a_t = a_t.squeeze(dim=1)
+            
             U_t = torch.cat([a_t, dec_hidden], dim=1)
             V_t = self.combined_projection(U_t)
             o_t = self.dropout(V_t.tanh())
