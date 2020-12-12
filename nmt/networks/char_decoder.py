@@ -5,7 +5,7 @@ from torch import nn
 class CharDecoder(nn.Module):
     def __init__(self, num_embeddings: int,
                  hidden_size: int, padding_idx: int,
-                 embedding_dim: int) -> None:
+                 embedding_dim: int = 50) -> None:
         """
         Initialize the character level decoder
         Check notebooks: char-decoding.ipynb for explanation
@@ -15,6 +15,7 @@ class CharDecoder(nn.Module):
         @param padding_idx: target char idx.
         @param embedding_dim: embedding dimension.
         """
+        super(CharDecoder, self).__init__()
         self.embedding = nn.Embedding(
             num_embeddings=num_embeddings,
             embedding_dim=embedding_dim,
