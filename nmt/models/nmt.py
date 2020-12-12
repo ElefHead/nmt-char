@@ -19,6 +19,7 @@ class NMT(nn.Module):
             embedding_dim=embedding_dim,
             char_padding_idx=vocab.src.pad_char_idx,
             hidden_size=hidden_size,
+            num_layers=num_encoder_layers
         )
         self.decoder = Decoder(
             num_embeddings=vocab.tgt.length(tokens=False),
