@@ -5,18 +5,15 @@ from torch import nn
 class CharDecoder(nn.Module):
     def __init__(self, num_embeddings: int,
                  hidden_size: int, padding_idx: int,
-                 embedding_dim: int,
-                 output_size: int) -> None:
+                 embedding_dim: int) -> None:
         """
         Initialize the character level decoder
         Check notebooks: char-decoding.ipynb for explanation
-        @param input_size: input size for the lstm layer
-            should be equal to character embedding dim.
-        @param hidden_size: hidden units for lstm layer
-        @param num_layers: number of layers for the lstm layer.
-        @param output_size: number of output units on
-            projection layer for score. Should be equal to
-            vocab.tgt.length(tokens=False)
+        @param num_embeddings: number of embeddings.
+            It equals vocab.tgt.length(tokens=False).
+        @param hidden_size: hidden units for lstm layer.
+        @param padding_idx: target char idx.
+        @param embedding_dim: embedding dimension.
         """
         self.embedding = nn.Embedding(
             num_embeddings=num_embeddings,
@@ -29,7 +26,7 @@ class CharDecoder(nn.Module):
         )
         self.linear = nn.Linear(
             in_features=hidden_size,
-            out_features=output_size
+            out_features=num_embeddings
         )
 
     def forward(self,
