@@ -77,6 +77,13 @@ def _parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--valid-niter",
+        type=int,
+        help="Validation iteration: default=2000",
+        default=100
+    )
+
+    parser.add_argument(
         "--clip-grad",
         type=float,
         default=5.0,
@@ -131,4 +138,5 @@ def _parse_args() -> argparse.Namespace:
 
 if __name__ == "__main__":
     args = _parse_args()
-    print(args)
+    if args.train:
+        run_train
