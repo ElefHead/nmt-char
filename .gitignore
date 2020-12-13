@@ -129,3 +129,4 @@ dmypy.json
 .pyre/
 
 nmt/datasets/data/
+nmt/datasets/outputs/
