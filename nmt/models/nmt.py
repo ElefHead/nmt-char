@@ -63,6 +63,8 @@ class NMT(nn.Module):
         tgt_tensor_noend = tgt_tensor[:-1]
         src_encoding, dec_state = self.encoder(src_tensor, src_length)
 
+        enc_masks = self.generate_sentence_masks(src_encoding, src_length)
+
         batch_size, _, _ = src_encoding.size()
 
         o_prev = torch.zeros(batch_size, self.hidden_size, device=self.device)
@@ -70,7 +72,7 @@ class NMT(nn.Module):
         combined_outputs = []
         for y_t in torch.split(tgt_tensor_noend, 1, dim=0):
             o_prev, dec_state, _ = self.decoder(
-                y_t, src_encoding, dec_state, o_prev)
+                y_t, src_encoding, dec_state, o_prev, enc_masks)
             combined_outputs.append(o_prev)
 
         combined_outputs = torch.stack(combined_outputs, dim=0)
@@ -113,6 +115,18 @@ class NMT(nn.Module):
             loss = loss - char_loss(char_logits, target_chars_oov)
 
         return loss
+
+    def generate_sentence_masks(self,
+                                enc_out: torch.Tensor,
+                                source_lengths: List[int]) -> torch.Tensor:
+        enc_masks = torch.zeros(
+            enc_out.size(0),
+            enc_out.size(1),
+            device=self.device
+        )
+        for e_id, src_len in enumerate(source_lengths):
+            enc_masks[e_id, src_len:] = 1
+        return enc_masks
 
     @property
     def device(self) -> torch.device:
