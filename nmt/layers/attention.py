@@ -22,9 +22,9 @@ class Attention(nn.Module):
         score = enc_projection.bmm(dec_hidden_unsqueezed_t)
         score = score.squeeze(dim=2)
 
-        if enc_masks:
+        if enc_masks is not None:
             score.data.masked_fill_(
-                enc_masks.byte().to(torch.bool),
+                enc_masks.byte(),
                 -float('inf')
             )
 
