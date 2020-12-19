@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from torch.nn import functional as F
 
 from nmt.datasets import Vocab
 from nmt.networks import Encoder, Decoder, CharDecoder
@@ -123,6 +124,36 @@ class NMT(nn.Module):
         for e_id, src_len in enumerate(source_lengths):
             enc_masks[e_id, src_len:] = 1
         return enc_masks
+
+    def greedy_char_decode(self, dec_state, max_length: int = 21):
+        batch_size = dec_state[0].size(1)
+
+        start = self.vocab.tgt.start_char_idx
+        end = self.vocab.tgt.end_char_idx
+
+        output_words = [""] * batch_size
+        start_char_ids = [[start] * batch_size]
+        current_char_ids = torch.tensor(
+            start_char_ids, device=self.device
+        )
+        current_states = dec_state
+
+        for _ in range(max_length):
+            score, current_states = self.char_decoder(
+                current_char_ids,
+                current_states
+            )
+            prob = F.softmax(score.squeeze(0), dim=1)
+            current_char_ids = prob.argmax(dim=1).unsqueeze(dim=0)
+            for i, c in enumerate(current_char_ids.squeeze(dim=0)):
+                output_words[i] += self.vocab.tgt.to_char(int(c.item()))
+
+        decoded_words = []
+        for word in output_words:
+            end_pos = word.find(self.vocab.tgt.to_char(end))
+            decoded_words.append(word if end_pos == -1 else word[:end_pos])
+
+        return decoded_words
 
     @property
     def device(self) -> torch.device:
