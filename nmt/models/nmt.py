@@ -1,10 +1,9 @@
 import torch
 from torch import nn
-from torch.nn import functional as F
 
 from nmt.datasets import Vocab
 from nmt.networks import Encoder, Decoder, CharDecoder
-
+from nmt.layers import Generator
 from typing import List, Tuple
 
 
@@ -29,10 +28,9 @@ class NMT(nn.Module):
             char_padding_idx=vocab.tgt.pad_char_idx,
             hidden_size=hidden_size
         )
-        self.target_layer = nn.Linear(
+        self.generator = Generator(
             in_features=hidden_size,
-            out_features=len(vocab.tgt),
-            bias=False
+            out_features=len(vocab.tgt)
         )
         self.char_decoder = None
         if use_char_decoder:
@@ -77,9 +75,7 @@ class NMT(nn.Module):
 
         combined_outputs = torch.stack(combined_outputs, dim=0)
 
-        logits = self.target_layer(combined_outputs)
-
-        probs = F.log_softmax(logits, dim=-1)
+        probs = self.generator(combined_outputs)
 
         # zero out the pad targets
         target_masks = (tgt_token_tensor != self.vocab.tgt['<pad>']).float()

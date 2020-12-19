@@ -1,5 +1,5 @@
 from torch import nn
-from torch.nn import function as F
+from torch.nn import functional as F
 
 
 class Generator(nn.Module):
