@@ -7,6 +7,8 @@ from nmt.networks import Encoder, Decoder, CharDecoder
 from nmt.layers import Generator
 from typing import List, Tuple
 
+import sys
+
 
 class NMT(nn.Module):
     def __init__(self, vocab: Vocab,
@@ -168,15 +170,14 @@ class NMT(nn.Module):
         return self.current_device
 
     @staticmethod
-    def load(model_path: str, no_char_decoder=False):
+    def load(model_path: str):
         """ Load the model from a file.
         @param model_path (str): path to model
         """
         params = torch.load(
             model_path, map_location=lambda storage, loc: storage)
         args = params['args']
-        model = NMT(vocab=params['vocab'],
-                    use_char_decoder=use_char_decoder, **args)
+        model = NMT(vocab=params['vocab'], **args)
         model.load_state_dict(params['state_dict'])
         return model
 
