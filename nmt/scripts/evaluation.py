@@ -13,7 +13,7 @@ from nltk.translate.bleu_score import corpus_bleu
 
 
 def evaluate_ppl(model: NMT,
-                 dev_data: Tuple(List[List[str]], List[List[str]]),
+                 dev_data: Tuple[List[List[str]], List[List[str]]],
                  batch_size: int = 32) -> float:
     """ Evaluate perplexity on dev sentences
     @param model (NMT): NMT Model
@@ -82,11 +82,10 @@ def evaluate(args: Namespace):
         test_data_tgt = read_corpus(args.test_tgt, is_target=True)
 
     print("load model from {}".format(args.model_path), file=sys.stderr)
-    model = NMT.load(args.model_path,
-                     no_char_decoder=args.use_chardecoder)
+    model = NMT.load(args.model_path)
 
     if args.cuda:
-        model = model.to(torch.device("cuda:0"))
+        model = model.cuda()
 
     hypotheses = beam_search(
         model, test_data_src,
@@ -100,7 +99,7 @@ def evaluate(args: Namespace):
             test_data_tgt, top_hypotheses)
         print('Corpus BLEU: {}'.format(bleu_score * 100), file=sys.stderr)
 
-    with open(args.output_file, 'w') as f:
+    with open(args.output_path, 'w') as f:
         for src_sent, hyps in zip(test_data_src, hypotheses):
             top_hyp = hyps[0]
             hyp_sent = ' '.join(top_hyp.value)

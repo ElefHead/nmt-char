@@ -20,7 +20,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         '--train',
         action="store_true",
-        default=True,
+        default=False,
         help="Set true to run training with given config"
     )
 
@@ -74,6 +74,20 @@ def _parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--embedding-size",
+        type=int,
+        help="Embedding size",
+        default=256
+    )
+
+    parser.add_argument(
+        "--hidden-size",
+        type=int,
+        help="Hidden size",
+        default=256
+    )
+
+    parser.add_argument(
         "--max-decoding-time-step",
         type=int,
         default=70,
@@ -92,6 +106,13 @@ def _parse_args() -> argparse.Namespace:
         type=int,
         help="Seed value for random states: default=42",
         default=42
+    )
+
+    parser.add_argument(
+        "--patience",
+        type=int,
+        default=5,
+        help="How many iters to wait before decay"
     )
 
     parser.add_argument(
@@ -176,6 +197,13 @@ def _parse_args() -> argparse.Namespace:
         type=str,
         default=None,
         help="Output location"
+    )
+
+    parser.add_argument(
+        "--log-every",
+        type=int,
+        default=10,
+        help="Log every"
     )
 
     args = parser.parse_args()

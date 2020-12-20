@@ -191,7 +191,7 @@ class NMT(nn.Module):
             'args': dict(
                 num_encoder_layers=self.num_encoder_layers,
                 hidden_size=self.hidden_size,
-                dropout_rate=self.dropout_rate,
+                dropout_prob=self.dropout_prob,
                 use_char_decoder=self.use_char_decoder,
                 embedding_dim=self.embedding_dim
             ),

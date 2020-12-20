@@ -35,7 +35,8 @@ def beam_search(
             desc='Decoding',
             file=sys.stdout
         ):
-            example_hyps = model.beam_search(
+            example_hyps = beam_search_decoder(
+                model,
                 src_sent,
                 beam_size=beam_size,
                 max_decoding_time_step=max_decoding_time_step
@@ -55,7 +56,11 @@ def beam_search_decoder(
     beam_size: int = 5,
     max_decoding_time_step: int = 70
 ) -> List[str]:
-    src_char_tensor = model.vocab.src.to_tensor([src_sent], tokens=False)
+    src_char_tensor = model.vocab.src.to_tensor(
+        [src_sent],
+        tokens=False,
+        device=model.device
+    )
     src_encode, dec_state = model.encoder(
         src_char_tensor,
         [len(src_sent)]
@@ -63,7 +68,8 @@ def beam_search_decoder(
     hypotheses = [['<s>']]
     completed_hypotheses = []
     hyp_scores = torch.zeros(
-        len(hypotheses), dtype=torch.float
+        len(hypotheses), dtype=torch.float,
+        device=model.device
     )
     o_prev = torch.zeros(1, model.hidden_size, device=model.device)
     t = 0
@@ -98,7 +104,7 @@ def beam_search_decoder(
         top_cand_hyp_scores, top_cand_hyp_pos = torch.topk(
             continuing_hyp_scores, k=live_hyp_num)
 
-        prev_hyp_ids = top_cand_hyp_pos / len(model.vocab.tgt)
+        prev_hyp_ids = top_cand_hyp_pos // len(model.vocab.tgt)
         hyp_word_ids = top_cand_hyp_pos % len(model.vocab.tgt)
 
         new_hypotheses = []
