@@ -217,7 +217,7 @@ if __name__ == "__main__":
     torch.manual_seed(seed)
     if args.cuda:
         torch.cuda.manual_seed(seed)
-    np.random.seed(seed)
+    np.random.seed(seed * 13 // 7)
 
     if args.train:
         train(args)

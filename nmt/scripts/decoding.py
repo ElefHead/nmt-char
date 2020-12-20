@@ -71,7 +71,7 @@ def beam_search_decoder(
         len(hypotheses), dtype=torch.float,
         device=model.device
     )
-    o_prev = torch.zeros(1, model.hidden_size, device=model.device)
+    att_tm1 = torch.zeros(1, model.hidden_size, device=model.device)
     t = 0
     while len(completed_hypotheses) < beam_size and t < max_decoding_time_step:
         t += 1
@@ -94,15 +94,15 @@ def beam_search_decoder(
             list([hyp[-1]] for hyp in hypotheses),
             tokens=False, device=model.device
         )
-        out, dec_state, _ = model.decoder(
+        att_t, dec_state, _ = model.decoder(
             y_t,
             exp_src_encodings,
             dec_state,
             exp_src_encoding_proj,
-            o_prev,
+            att_tm1,
             None
         )
-        log_p_t = model.generator(out)
+        log_p_t = model.generator(att_t)
         live_hyp_num = beam_size - len(completed_hypotheses)
 
         continuing_hyp_scores = (hyp_scores.unsqueeze(
@@ -131,7 +131,7 @@ def beam_search_decoder(
             # Record output layer in case UNK was generated
             if hyp_word == "<unk>":
                 hyp_word = "<unk>"+str(len(decoderStatesForUNKsHere))
-                decoderStatesForUNKsHere.append(o_prev[prev_hyp_id])
+                decoderStatesForUNKsHere.append(att_t[prev_hyp_id])
 
             new_hyp_sent = hypotheses[prev_hyp_id] + [hyp_word]
             if hyp_word == '</s>':
@@ -170,7 +170,7 @@ def beam_search_decoder(
             device=model.device
         )
 
-        o_prev = out[live_hyp_ids]
+        att_tm1 = att_t[live_hyp_ids]
         hidden, cell = dec_state
         dec_state = (
             hidden[live_hyp_ids],

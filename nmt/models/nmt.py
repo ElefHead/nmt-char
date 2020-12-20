@@ -142,27 +142,27 @@ class NMT(nn.Module):
         start = self.vocab.tgt.start_char_idx
         end = self.vocab.tgt.end_char_idx
 
-        output_words = [""] * batch_size
-        start_char_ids = [[start] * batch_size]
-        current_char_ids = torch.tensor(
-            start_char_ids, device=self.device
-        )
+        decode_tuple = [["", False]] * batch_size
+        inp = torch.tensor(
+            [start for _ in range(batch_size)],
+            device=self.device
+        ).unsqueeze(0)
         current_states = dec_state
 
         for _ in range(max_length):
             score, current_states = self.char_decoder(
-                current_char_ids,
+                inp,
                 current_states
             )
-            prob = F.softmax(score.squeeze(0), dim=1)
-            current_char_ids = prob.argmax(dim=1).unsqueeze(dim=0)
-            for i, c in enumerate(current_char_ids.squeeze(dim=0)):
-                output_words[i] += self.vocab.tgt.to_char(int(c.item()))
+            inp = score.argmax(dim=2)  # (1, b)
+            for i, c in enumerate(inp.detach().squeeze(dim=0)):
+                if not decode_tuple[i][1]:
+                    if c != end:
+                        decode_tuple[i][0] += self.vocab.tgt.to_char(c.item())
+                    else:
+                        decode_tuple[i][1] = True
 
-        decoded_words = []
-        for word in output_words:
-            end_pos = word.find(self.vocab.tgt.to_char(end))
-            decoded_words.append(word if end_pos == -1 else word[:end_pos])
+        decoded_words = [i[0] for i in decode_tuple]
 
         return decoded_words
 

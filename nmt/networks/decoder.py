@@ -18,7 +18,7 @@ def attention(value: torch.Tensor,
 
     if enc_masks is not None:
         score.data.masked_fill_(
-            enc_masks.byte(),
+            enc_masks.bool(),
             -float('inf')
         )
 
