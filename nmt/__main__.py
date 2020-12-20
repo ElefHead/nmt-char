@@ -1,4 +1,8 @@
 import argparse
+import torch
+import numpy as np
+
+from nmt.scripts import evaluate, train
 
 
 def _parse_args() -> argparse.Namespace:
@@ -16,7 +20,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         '--train',
         action="store_true",
-        default=True,
+        default=False,
         help="Set true to run training with given config"
     )
 
@@ -49,10 +53,45 @@ def _parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--test-src",
+        type=str,
+        help="Test data source location",
+        default=None
+    )
+
+    parser.add_argument(
+        "--test-tgt",
+        type=str,
+        help="Test data source location",
+        default=None
+    )
+
+    parser.add_argument(
         "--max-epoch",
         type=int,
         help="Maximum epochs for training",
         default=30
+    )
+
+    parser.add_argument(
+        "--embedding-size",
+        type=int,
+        help="Embedding size",
+        default=256
+    )
+
+    parser.add_argument(
+        "--hidden-size",
+        type=int,
+        help="Hidden size",
+        default=256
+    )
+
+    parser.add_argument(
+        "--max-decoding-time-step",
+        type=int,
+        default=70,
+        help="maximum number of decoding time steps"
     )
 
     parser.add_argument(
@@ -70,6 +109,13 @@ def _parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--patience",
+        type=int,
+        default=5,
+        help="How many iters to wait before decay"
+    )
+
+    parser.add_argument(
         "--batch-size",
         type=int,
         help="Batch size: default=32",
@@ -81,6 +127,13 @@ def _parse_args() -> argparse.Namespace:
         type=int,
         help="Validation iteration: default=2000",
         default=100
+    )
+
+    parser.add_argument(
+        "--beam-size",
+        type=int,
+        help="beam size",
+        default=5
     )
 
     parser.add_argument(
@@ -119,6 +172,13 @@ def _parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--model-path",
+        type=str,
+        default=None,
+        help="Model load location"
+    )
+
+    parser.add_argument(
         "--dropout",
         type=float,
         default=0.3,
@@ -132,11 +192,34 @@ def _parse_args() -> argparse.Namespace:
         help="If set true, NMT model will use char decoder"
     )
 
+    parser.add_argument(
+        "--output-path",
+        type=str,
+        default=None,
+        help="Output location"
+    )
+
+    parser.add_argument(
+        "--log-every",
+        type=int,
+        default=10,
+        help="Log every"
+    )
+
     args = parser.parse_args()
     return args
 
 
 if __name__ == "__main__":
     args = _parse_args()
+
+    seed = int(args.seed)
+    torch.manual_seed(seed)
+    if args.cuda:
+        torch.cuda.manual_seed(seed)
+    np.random.seed(seed)
+
     if args.train:
-        run_train
+        train(args)
+    else:
+        evaluate(args)

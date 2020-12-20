@@ -7,15 +7,22 @@ from nmt.networks import Encoder, Decoder, CharDecoder
 from nmt.layers import Generator
 from typing import List, Tuple
 
+import sys
+
 
 class NMT(nn.Module):
     def __init__(self, vocab: Vocab,
                  embedding_dim: int,
                  hidden_size: int,
                  num_encoder_layers: int = 2,
+                 dropout_prob: float = 0.3,
                  use_char_decoder: bool = False) -> None:
         super(NMT, self).__init__()
+        self.num_encoder_layers = num_encoder_layers
+        self.use_char_decoder = use_char_decoder
         self.vocab = vocab
+        self.dropout_prob = dropout_prob
+        self.embedding_dim = embedding_dim
         self.encoder = Encoder(
             num_embeddings=vocab.src.length(tokens=False),
             embedding_dim=embedding_dim,
@@ -27,7 +34,8 @@ class NMT(nn.Module):
             num_embeddings=vocab.tgt.length(tokens=False),
             embedding_dim=embedding_dim,
             char_padding_idx=vocab.tgt.pad_char_idx,
-            hidden_size=hidden_size
+            hidden_size=hidden_size,
+            dropout_prob=dropout_prob
         )
         self.generator = Generator(
             in_features=hidden_size,
@@ -160,3 +168,35 @@ class NMT(nn.Module):
         if not self.current_device:
             self.current_device = next(self.parameters()).device
         return self.current_device
+
+    @staticmethod
+    def load(model_path: str):
+        """ Load the model from a file.
+        @param model_path (str): path to model
+        """
+        params = torch.load(
+            model_path, map_location=lambda storage, loc: storage)
+        args = params['args']
+        model = NMT(vocab=params['vocab'], **args)
+        model.load_state_dict(params['state_dict'])
+        return model
+
+    def save(self, path: str):
+        """ Save the odel to a file.
+        @param path (str): path to the model
+        """
+        print('save model parameters to [%s]' % path, file=sys.stderr)
+
+        params = {
+            'args': dict(
+                num_encoder_layers=self.num_encoder_layers,
+                hidden_size=self.hidden_size,
+                dropout_prob=self.dropout_prob,
+                use_char_decoder=self.use_char_decoder,
+                embedding_dim=self.embedding_dim
+            ),
+            'vocab': self.vocab,
+            'state_dict': self.state_dict()
+        }
+
+        torch.save(params, path)
