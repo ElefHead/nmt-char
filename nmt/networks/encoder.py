@@ -36,6 +36,11 @@ class Encoder(nn.Module):
             out_features=hidden_size,
             bias=False
         )
+        self.encoder_projection = nn.Linear(
+            in_features=hidden_size * 2,
+            out_features=hidden_size,
+            bias=False
+        )
 
     def forward(self, x: torch.Tensor, source_lengths: List[int]):
         # x is batch of sentences
@@ -53,4 +58,8 @@ class Encoder(nn.Module):
         last_cell = torch.cat((last_cell[0], last_cell[1]), dim=1)
         init_decoder_cell = self.cell_projection(last_cell)
 
-        return enc_output, (init_decoder_hidden, init_decoder_cell)
+        enc_projection = self.encoder_projection(enc_output)
+
+        return enc_output, \
+            (init_decoder_hidden, init_decoder_cell), \
+            enc_projection

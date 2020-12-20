@@ -76,6 +76,7 @@ def evaluate(args: Namespace):
     print("load test source sentences from [{}]".format(
         args.test_src), file=sys.stderr)
     test_data_src = read_corpus(args.test_src, is_target=False)
+    test_data_tgt = []
     if args.test_tgt:
         print("load test target sentences from [{}]".format(
             args.test_tgt), file=sys.stderr)
@@ -96,7 +97,9 @@ def evaluate(args: Namespace):
     if args.test_tgt:
         top_hypotheses = [hyps[0] for hyps in hypotheses]
         bleu_score = compute_corpus_level_bleu_score(
-            test_data_tgt, top_hypotheses)
+            test_data_tgt,
+            top_hypotheses
+        )
         print('Corpus BLEU: {}'.format(bleu_score * 100), file=sys.stderr)
 
     with open(args.output_path, 'w') as f:

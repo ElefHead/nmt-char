@@ -61,7 +61,7 @@ def beam_search_decoder(
         tokens=False,
         device=model.device
     )
-    src_encode, dec_state = model.encoder(
+    src_encode, dec_state, src_encoding_projection = model.encoder(
         src_char_tensor,
         [len(src_sent)]
     )
@@ -84,6 +84,12 @@ def beam_search_decoder(
             src_encode.size(2)
         )
 
+        exp_src_encoding_proj = src_encoding_projection.expand(
+            num_hyp,
+            src_encoding_projection.size(1),
+            src_encoding_projection.size(2)
+        )
+
         y_t = model.vocab.tgt.to_tensor(
             list([hyp[-1]] for hyp in hypotheses),
             tokens=False, device=model.device
@@ -92,6 +98,7 @@ def beam_search_decoder(
             y_t,
             exp_src_encodings,
             dec_state,
+            exp_src_encoding_proj,
             o_prev,
             None
         )

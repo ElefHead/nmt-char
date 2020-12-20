@@ -53,8 +53,8 @@ class NMT(nn.Module):
 
     def forward(self,
                 x: List[List[int]],
-                y: List[List[int]],
-                training: bool = False) -> Tuple[torch.Tensor, torch.Tensor]:
+                y: List[List[int]]) -> Tuple[torch.Tensor, torch.Tensor]:
+
         src_length = [len(sent) for sent in x]
 
         src_tensor = self.vocab.src.to_tensor(
@@ -68,7 +68,9 @@ class NMT(nn.Module):
         )
 
         tgt_tensor_noend = tgt_tensor[:-1]
-        src_encoding, dec_state = self.encoder(src_tensor, src_length)
+        src_encoding, dec_state, src_enc_projection = self.encoder(
+            src_tensor, src_length
+        )
 
         enc_masks = self.generate_sentence_masks(src_encoding, src_length)
 
@@ -79,7 +81,8 @@ class NMT(nn.Module):
         combined_outputs = []
         for y_t in torch.split(tgt_tensor_noend, 1, dim=0):
             o_prev, dec_state, _ = self.decoder(
-                y_t, src_encoding, dec_state, o_prev, enc_masks)
+                y_t, src_encoding, dec_state, src_enc_projection,
+                o_prev, enc_masks)
             combined_outputs.append(o_prev)
 
         combined_outputs = torch.stack(combined_outputs, dim=0)
