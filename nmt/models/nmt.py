@@ -6,8 +6,6 @@ from nmt.networks import Encoder, Decoder, CharDecoder
 from nmt.layers import Generator
 from typing import List, Tuple
 
-import sys
-
 
 class NMT(nn.Module):
     def __init__(self, vocab: Vocab,
@@ -135,29 +133,33 @@ class NMT(nn.Module):
         batch_size = dec_state[0].size(1)
 
         start = self.vocab.tgt.start_char_idx
-        end = self.vocab.tgt.end_char_idx
 
-        decode_tuple = [["", False]] * batch_size
+        decoded_lists = [""] * batch_size
         inp = torch.tensor(
-            [start for _ in range(batch_size)],
+            [[start] * batch_size],
             device=self.device
-        ).unsqueeze(0)
+        )
         current_states = dec_state
 
         for _ in range(max_length):
-            score, current_states = self.char_decoder(
+            scores, current_states = self.char_decoder(
                 inp,
                 current_states
             )
-            inp = score.argmax(dim=2)  # (1, b)
-            for i, c in enumerate(inp.detach().squeeze(dim=0)):
-                if not decode_tuple[i][1]:
-                    if c != end:
-                        decode_tuple[i][0] += self.vocab.tgt.to_char(c.item())
-                    else:
-                        decode_tuple[i][1] = True
+            probabilities = torch.softmax(
+                scores.squeeze(0), dim=1
+            )
+            inp = torch.argmax(
+                probabilities, dim=1
+            ).unsqueeze(0)
 
-        decoded_words = [i[0] for i in decode_tuple]
+            for i, c in enumerate(inp.squeeze(dim=0)):
+                decoded_lists[i] += self.vocab.tgt.to_char(int(c))
+
+        decoded_words = []
+        for word in decoded_lists:
+            end_pos = word.find(self.vocab.tgt.end_char)
+            decoded_words.append(word if end_pos == -1 else word[: end_pos])
 
         return decoded_words
 
@@ -183,7 +185,7 @@ class NMT(nn.Module):
         """ Save the odel to a file.
         @param path (str): path to the model
         """
-        print('save model parameters to [%s]' % path, file=sys.stderr)
+        print(f'save model parameters to [{path}]')
 
         params = {
             'args': dict(
