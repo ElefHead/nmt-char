@@ -132,8 +132,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--valid-niter",
         type=int,
-        help="Validation iteration: default=2000",
-        default=100
+        help="Validation iteration",
+        default=2000
     )
 
     parser.add_argument(
