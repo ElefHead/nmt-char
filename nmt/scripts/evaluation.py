@@ -84,7 +84,8 @@ def evaluate(args: Namespace):
 
     print("load model from {}".format(args.model_path), file=sys.stderr)
     model = NMT.load(args.model_path)
-
+    print(model)
+    print("Num parameters:", len(list(model.parameters())))
     if args.cuda:
         model = model.cuda()
 

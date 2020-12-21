@@ -36,7 +36,6 @@ class CharEmbedding(nn.Module):
                                self.char_embedding_dim).permute([0, 2, 1])
 
         cnn_embed_t = self.cnn_embed(embed_t)
-        cnn_embed_t = cnn_embed_t.squeeze(dim=2)
 
         highway_t = self.highway(cnn_embed_t)
 

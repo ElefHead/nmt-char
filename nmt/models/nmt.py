@@ -1,6 +1,5 @@
 import torch
 from torch import nn
-from torch.nn import functional as F
 
 from nmt.datasets import Vocab
 from nmt.networks import Encoder, Decoder, CharDecoder
@@ -14,11 +13,9 @@ class NMT(nn.Module):
     def __init__(self, vocab: Vocab,
                  embedding_dim: int,
                  hidden_size: int,
-                 num_encoder_layers: int = 2,
                  dropout_prob: float = 0.3,
                  use_char_decoder: bool = False) -> None:
         super(NMT, self).__init__()
-        self.num_encoder_layers = num_encoder_layers
         self.use_char_decoder = use_char_decoder
         self.vocab = vocab
         self.dropout_prob = dropout_prob
@@ -27,8 +24,7 @@ class NMT(nn.Module):
             num_embeddings=vocab.src.length(tokens=False),
             embedding_dim=embedding_dim,
             char_padding_idx=vocab.src.pad_char_idx,
-            hidden_size=hidden_size,
-            num_layers=num_encoder_layers
+            hidden_size=hidden_size
         )
         self.decoder = Decoder(
             num_embeddings=vocab.tgt.length(tokens=False),
@@ -42,7 +38,7 @@ class NMT(nn.Module):
             out_features=len(vocab.tgt)
         )
         self.char_decoder = None
-        if use_char_decoder:
+        if self.use_char_decoder:
             self.char_decoder = CharDecoder(
                 num_embeddings=vocab.tgt.length(tokens=False),
                 hidden_size=hidden_size,
@@ -60,7 +56,7 @@ class NMT(nn.Module):
         src_tensor = self.vocab.src.to_tensor(
             x, tokens=False, device=self.device
         )
-        tgt_tensor = self.vocab.tgt.to_tensor(
+        tgt_tensor = self.vocab.src.to_tensor(
             y, tokens=False, device=self.device
         )
         tgt_token_tensor = self.vocab.tgt.to_tensor(
@@ -99,7 +95,7 @@ class NMT(nn.Module):
 
         loss = target_token_log_prob.sum()
 
-        if self.char_decoder:
+        if self.use_char_decoder:
             max_word_len = tgt_tensor.shape[-1]
             target_chars = tgt_tensor[1:].contiguous().view(-1, max_word_len)
             target_outputs = combined_outputs.view(-1, self.hidden_size)
@@ -111,13 +107,12 @@ class NMT(nn.Module):
                 target_chars_oov[:-1],
                 (rnn_states_oov, rnn_states_oov)
             )
-
-            char_logits = char_logits.view(-1, char_logits.shape[-1])
-            target_chars_oov = target_chars_oov[1:].contiguous().view(-1)
+            char_logits = char_logits.permute(1, 2, 0)
+            # char_logits = char_logits.view(-1, char_logits.shape[-1])
+            target_chars_oov = target_chars_oov[1:].permute(1, 0)
 
             char_loss = nn.CrossEntropyLoss(
-                reduction="sum",
-                ignore_index=self.vocab.tgt.pad_char_idx
+                reduction="sum"
             )
 
             loss = loss - char_loss(char_logits, target_chars_oov)
@@ -192,7 +187,6 @@ class NMT(nn.Module):
 
         params = {
             'args': dict(
-                num_encoder_layers=self.num_encoder_layers,
                 hidden_size=self.hidden_size,
                 dropout_prob=self.dropout_prob,
                 use_char_decoder=self.use_char_decoder,

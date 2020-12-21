@@ -147,7 +147,7 @@ def beam_search_decoder(
                 new_hyp_scores.append(cand_new_hyp_score)
 
         if len(decoderStatesForUNKsHere) > 0 and \
-                model.char_decoder is not None:  # decode UNKs
+                model.use_char_decoder:  # decode UNKs
             decoderStatesForUNKsHere = torch.stack(
                 decoderStatesForUNKsHere, dim=0)
             decodedWords = model.greedy_char_decode(

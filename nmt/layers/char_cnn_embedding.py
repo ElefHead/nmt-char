@@ -14,5 +14,5 @@ class CharCNNEmbedding(nn.Module):
 
     def forward(self, x: torch.Tensor):
         out = F.relu(self.conv(x))
-        out = self.maxpool(out)
+        out = self.maxpool(out).squeeze(dim=2)
         return out

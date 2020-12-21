@@ -10,8 +10,7 @@ from typing import List
 class Encoder(nn.Module):
     def __init__(self, num_embeddings: int, embedding_dim: int,
                  char_padding_idx: int, hidden_size: int,
-                 char_embedding_dim: int = 50,
-                 num_layers: int = 2) -> None:
+                 char_embedding_dim: int = 50) -> None:
         super(Encoder, self).__init__()
         self.embedding = CharEmbedding(
             num_embeddings=num_embeddings,
@@ -22,7 +21,6 @@ class Encoder(nn.Module):
         self.encoder = nn.LSTM(
             input_size=embedding_dim,
             hidden_size=hidden_size,
-            num_layers=num_layers,
             bias=True,
             bidirectional=True
         )

@@ -36,6 +36,8 @@ def train(args: Namespace):
     )
 
     model.train()
+    print(model)
+    print("Num model params:", len(list(model.parameters())))
 
     uniform_init = float(args.uniform_init)
     if np.abs(uniform_init) > 0.:
