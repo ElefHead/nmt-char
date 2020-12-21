@@ -74,6 +74,13 @@ def _parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--max-num-trial",
+        type=int,
+        help="terminate training after how many trials",
+        default=5
+    )
+
+    parser.add_argument(
         "--embedding-size",
         type=int,
         help="Embedding size",
