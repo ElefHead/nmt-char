@@ -1,6 +1,5 @@
 import torch
 from torch import nn
-from torch.nn import functional as F
 
 from nmt.datasets import Vocab
 from nmt.networks import Encoder, Decoder, CharDecoder
@@ -14,11 +13,9 @@ class NMT(nn.Module):
     def __init__(self, vocab: Vocab,
                  embedding_dim: int,
                  hidden_size: int,
-                 num_encoder_layers: int = 2,
                  dropout_prob: float = 0.3,
                  use_char_decoder: bool = False) -> None:
         super(NMT, self).__init__()
-        self.num_encoder_layers = num_encoder_layers
         self.use_char_decoder = use_char_decoder
         self.vocab = vocab
         self.dropout_prob = dropout_prob
@@ -27,8 +24,7 @@ class NMT(nn.Module):
             num_embeddings=vocab.src.length(tokens=False),
             embedding_dim=embedding_dim,
             char_padding_idx=vocab.src.pad_char_idx,
-            hidden_size=hidden_size,
-            num_layers=num_encoder_layers
+            hidden_size=hidden_size
         )
         self.decoder = Decoder(
             num_embeddings=vocab.tgt.length(tokens=False),
@@ -42,7 +38,7 @@ class NMT(nn.Module):
             out_features=len(vocab.tgt)
         )
         self.char_decoder = None
-        if use_char_decoder:
+        if self.use_char_decoder:
             self.char_decoder = CharDecoder(
                 num_embeddings=vocab.tgt.length(tokens=False),
                 hidden_size=hidden_size,
@@ -53,14 +49,14 @@ class NMT(nn.Module):
 
     def forward(self,
                 x: List[List[int]],
-                y: List[List[int]],
-                training: bool = False) -> Tuple[torch.Tensor, torch.Tensor]:
+                y: List[List[int]]) -> Tuple[torch.Tensor, torch.Tensor]:
+
         src_length = [len(sent) for sent in x]
 
         src_tensor = self.vocab.src.to_tensor(
             x, tokens=False, device=self.device
         )
-        tgt_tensor = self.vocab.tgt.to_tensor(
+        tgt_tensor = self.vocab.src.to_tensor(
             y, tokens=False, device=self.device
         )
         tgt_token_tensor = self.vocab.tgt.to_tensor(
@@ -68,7 +64,9 @@ class NMT(nn.Module):
         )
 
         tgt_tensor_noend = tgt_tensor[:-1]
-        src_encoding, dec_state = self.encoder(src_tensor, src_length)
+        src_encoding, dec_state, src_enc_projection = self.encoder(
+            src_tensor, src_length
+        )
 
         enc_masks = self.generate_sentence_masks(src_encoding, src_length)
 
@@ -79,7 +77,8 @@ class NMT(nn.Module):
         combined_outputs = []
         for y_t in torch.split(tgt_tensor_noend, 1, dim=0):
             o_prev, dec_state, _ = self.decoder(
-                y_t, src_encoding, dec_state, o_prev, enc_masks)
+                y_t, src_encoding, dec_state, src_enc_projection,
+                o_prev, enc_masks)
             combined_outputs.append(o_prev)
 
         combined_outputs = torch.stack(combined_outputs, dim=0)
@@ -96,7 +95,7 @@ class NMT(nn.Module):
 
         loss = target_token_log_prob.sum()
 
-        if self.char_decoder:
+        if self.use_char_decoder:
             max_word_len = tgt_tensor.shape[-1]
             target_chars = tgt_tensor[1:].contiguous().view(-1, max_word_len)
             target_outputs = combined_outputs.view(-1, self.hidden_size)
@@ -108,13 +107,12 @@ class NMT(nn.Module):
                 target_chars_oov[:-1],
                 (rnn_states_oov, rnn_states_oov)
             )
-
-            char_logits = char_logits.view(-1, char_logits.shape[-1])
-            target_chars_oov = target_chars_oov[1:].contiguous().view(-1)
+            char_logits = char_logits.permute(1, 2, 0)
+            # char_logits = char_logits.view(-1, char_logits.shape[-1])
+            target_chars_oov = target_chars_oov[1:].permute(1, 0)
 
             char_loss = nn.CrossEntropyLoss(
-                reduction="sum",
-                ignore_index=self.vocab.tgt.pad_char_idx
+                reduction="sum"
             )
 
             loss = loss - char_loss(char_logits, target_chars_oov)
@@ -139,27 +137,27 @@ class NMT(nn.Module):
         start = self.vocab.tgt.start_char_idx
         end = self.vocab.tgt.end_char_idx
 
-        output_words = [""] * batch_size
-        start_char_ids = [[start] * batch_size]
-        current_char_ids = torch.tensor(
-            start_char_ids, device=self.device
-        )
+        decode_tuple = [["", False]] * batch_size
+        inp = torch.tensor(
+            [start for _ in range(batch_size)],
+            device=self.device
+        ).unsqueeze(0)
         current_states = dec_state
 
         for _ in range(max_length):
             score, current_states = self.char_decoder(
-                current_char_ids,
+                inp,
                 current_states
             )
-            prob = F.softmax(score.squeeze(0), dim=1)
-            current_char_ids = prob.argmax(dim=1).unsqueeze(dim=0)
-            for i, c in enumerate(current_char_ids.squeeze(dim=0)):
-                output_words[i] += self.vocab.tgt.to_char(int(c.item()))
+            inp = score.argmax(dim=2)  # (1, b)
+            for i, c in enumerate(inp.detach().squeeze(dim=0)):
+                if not decode_tuple[i][1]:
+                    if c != end:
+                        decode_tuple[i][0] += self.vocab.tgt.to_char(c.item())
+                    else:
+                        decode_tuple[i][1] = True
 
-        decoded_words = []
-        for word in output_words:
-            end_pos = word.find(self.vocab.tgt.to_char(end))
-            decoded_words.append(word if end_pos == -1 else word[:end_pos])
+        decoded_words = [i[0] for i in decode_tuple]
 
         return decoded_words
 
@@ -189,7 +187,6 @@ class NMT(nn.Module):
 
         params = {
             'args': dict(
-                num_encoder_layers=self.num_encoder_layers,
                 hidden_size=self.hidden_size,
                 dropout_prob=self.dropout_prob,
                 use_char_decoder=self.use_char_decoder,

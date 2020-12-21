@@ -31,10 +31,13 @@ def train(args: Namespace):
         vocab=vocab,
         embedding_dim=args.embedding_size,
         hidden_size=args.hidden_size,
-        use_char_decoder=args.use_chardecoder
+        use_char_decoder=args.use_chardecoder,
+        dropout_prob=args.dropout
     )
 
     model.train()
+    print(model)
+    print("Num model params:", len(list(model.parameters())))
 
     uniform_init = float(args.uniform_init)
     if np.abs(uniform_init) > 0.:
@@ -59,7 +62,8 @@ def train(args: Namespace):
     train_time = begin_time = time.time()
     print('begin Maximum Likelihood training')
 
-    for epoch in range(args.max_epoch):
+    while True:
+        epoch += 1
         for src_sents, tgt_sents in batch_iter(
                 train_data, batch_size=train_batch_size, shuffle=True):
 
@@ -189,3 +193,7 @@ def train(args: Namespace):
 
                         # reset patience
                         patience = 0
+
+        if epoch == args.max_epoch:
+            print('reached maximum number of epochs!', file=sys.stderr)
+            break
