@@ -28,7 +28,7 @@ Docker support coming soon. Meanwhile:
   * `test.sh`         : testing using all data - should produce BLEU score of ~29.40
   
 ###  Dependencies for installation
-* Python 3.6 (with pipenv - 3.6+ if using requirements.txt)
+* Python 3.6 (if using Pipfile; 3.6+ if using requirements.txt)
 * Pipenv
 
 ## References
