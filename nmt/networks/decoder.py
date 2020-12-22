@@ -7,9 +7,9 @@ from nmt.networks import CharEmbedding
 from typing import Tuple
 
 
-def attention(value: torch.Tensor,
+def attention(query: torch.Tensor,
               key: torch.Tensor,
-              query: torch.Tensor,
+              value: torch.Tensor,
               enc_masks: torch.Tensor = None) -> torch.Tensor:
 
     query_unsqueezed = query.unsqueeze(dim=2)
@@ -57,12 +57,11 @@ class Decoder(nn.Module):
 
     def forward(self, x: torch.Tensor,
                 enc_hidden: torch.Tensor,
-                dec_init_state: Tuple[torch.Tensor, torch.Tensor],
+                dec_state: Tuple[torch.Tensor, torch.Tensor],
                 enc_projection: torch.Tensor,
                 o_prev: torch.Tensor,
                 enc_masks: torch.Tensor = None) -> torch.Tensor:
 
-        dec_state = dec_init_state
         x = self.embedding(x)
 
         Ybar_t = torch.cat([x.squeeze(dim=0), o_prev], dim=1)
@@ -71,7 +70,7 @@ class Decoder(nn.Module):
         dec_hidden, dec_cell = dec_state
 
         attention_scores, context_vector = attention(
-            enc_hidden, enc_projection, dec_hidden, enc_masks)
+            dec_hidden, enc_projection, enc_hidden, enc_masks)
 
         U_t = torch.cat([context_vector, dec_hidden], dim=1)
         V_t = self.combined_projection(U_t)

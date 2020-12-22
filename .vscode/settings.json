@@ -4,5 +4,4 @@
     "[python]": {
         "editor.defaultFormatter": "ms-python.python"
     },
-    "python.pythonPath": "/home/ganesh/.local/share/virtualenvs/nmt-char-WY3r85FY/bin/python",
 }

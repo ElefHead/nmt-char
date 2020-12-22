@@ -11,13 +11,14 @@ class NMT(nn.Module):
     def __init__(self, vocab: Vocab,
                  embedding_dim: int,
                  hidden_size: int,
-                 dropout_prob: float = 0.3,
+                 dropout_prob: float = 0.2,
                  use_char_decoder: bool = False) -> None:
         super(NMT, self).__init__()
         self.use_char_decoder = use_char_decoder
         self.vocab = vocab
         self.dropout_prob = dropout_prob
         self.embedding_dim = embedding_dim
+        self.hidden_size = hidden_size
         self.encoder = Encoder(
             num_embeddings=vocab.src.length(tokens=False),
             embedding_dim=embedding_dim,
@@ -35,14 +36,14 @@ class NMT(nn.Module):
             in_features=hidden_size,
             out_features=len(vocab.tgt)
         )
-        self.char_decoder = None
         if self.use_char_decoder:
             self.char_decoder = CharDecoder(
                 num_embeddings=vocab.tgt.length(tokens=False),
                 hidden_size=hidden_size,
                 padding_idx=vocab.tgt.pad_char_idx
             )
-        self.hidden_size = hidden_size
+        else:
+            self.char_decoder = None
         self.current_device = None
 
     def forward(self,
@@ -61,7 +62,6 @@ class NMT(nn.Module):
             y, tokens=True, device=self.device
         )
 
-        tgt_tensor_noend = tgt_tensor[:-1]
         src_encoding, dec_state, src_enc_projection = self.encoder(
             src_tensor, src_length
         )
@@ -72,8 +72,11 @@ class NMT(nn.Module):
 
         o_prev = torch.zeros(batch_size, self.hidden_size, device=self.device)
 
+        tgt_tensor_noend = tgt_tensor[:-1]
+
         combined_outputs = []
-        for y_t in torch.split(tgt_tensor_noend, 1, dim=0):
+        for y_t in torch.split(
+                tgt_tensor_noend, split_size_or_sections=1, dim=0):
             o_prev, dec_state, _ = self.decoder(
                 y_t, src_encoding, dec_state, src_enc_projection,
                 o_prev, enc_masks)
@@ -106,7 +109,7 @@ class NMT(nn.Module):
                 (rnn_states_oov, rnn_states_oov)
             )
             char_logits = char_logits.permute(1, 2, 0)
-            # char_logits = char_logits.view(-1, char_logits.shape[-1])
+
             target_chars_oov = target_chars_oov[1:].permute(1, 0)
 
             char_loss = nn.CrossEntropyLoss(
