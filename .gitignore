@@ -131,3 +131,4 @@ dmypy.json
 nmt/datasets/data/
 nmt/datasets/outputs/
 nmt/weights/
+*.zip
