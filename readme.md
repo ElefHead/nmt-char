@@ -16,7 +16,7 @@ Docker support coming soon. Meanwhile:
   ```bash
   pipenv install --dev
   ```
-3. Download and place the Assignment 5 data from [Stanford CS224N](http://web.stanford.edu/class/archive/cs/cs224n/cs224n.1194/) in datasets/data/.
+3. Download and place the Assignment 5 data from [Stanford CS224N](http://web.stanford.edu/class/archive/cs/cs224n/cs224n.1194/) in `nmt/datasets/data/`.
 4. Run tasks as
   ```bash
   pipenv run sh tasks/<task-name>.sh
