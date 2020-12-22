@@ -4,8 +4,6 @@ This repository is a modularized re-write of [Stanford CS224N](http://web.stanfo
 
 I wanted to re-write it as a way of understanding the different components of the model and then eventually the tricks used to train the model - I have somewhat annotated a few notebooks for my own reference.  
 
-The code base works with PyTorch 1.7.0. 
-
 ## Usage
 Docker support coming soon. Meanwhile: 
 
@@ -29,8 +27,8 @@ Docker support coming soon. Meanwhile:
   * `train.sh`        : training using all data on GPU.
   * `test.sh`         : testing using all data - should produce BLEU score of ~29.40
   
-## Dependencies
-* Python 3.6+
+###  Dependencies for installation
+* Python 3.6 (with pipenv - 3.6+ if using requirements.txt)
 * Pipenv
 
 ## References
