@@ -75,7 +75,8 @@ class NMT(nn.Module):
         tgt_tensor_noend = tgt_tensor[:-1]
 
         combined_outputs = []
-        for y_t in torch.split(tgt_tensor_noend, split_size_or_sections=1, dim=0):
+        for y_t in torch.split(
+                tgt_tensor_noend, split_size_or_sections=1, dim=0):
             o_prev, dec_state, _ = self.decoder(
                 y_t, src_encoding, dec_state, src_enc_projection,
                 o_prev, enc_masks)
